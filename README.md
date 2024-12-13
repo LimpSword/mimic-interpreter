@@ -31,5 +31,9 @@ Pour l'éxécuter il est nécessaire de faire :
 
 ```bash
 cabal build 
-cabal run TestAll.hs```
+cabal run TestAll.hs
+```
 
+## Bugs rencontrés 
+
+Si le programme commence par un ou plusieurs espaces ou sauts de ligne, alors le parsing ne se fait pas et un arbre vide est retourné.
