@@ -215,8 +215,11 @@ main :: IO ()
 main = do
     -- Get the file name from the command line arguments
     file <- getArgs
-    prog <- readProg (head file)
-    let parsed = parse block "" prog
-    case parsed of
-        Left err -> print err
-        Right block -> interpretProgram block
+    if null file
+        then putStrLn "Usage: ./mini-c <file>"
+    else do 
+        prog <- readProg (head file)
+        let parsed = parse block "" prog
+        case parsed of
+            Left err -> print err
+            Right block -> interpretProgram block
