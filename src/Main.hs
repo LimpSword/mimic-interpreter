@@ -50,6 +50,9 @@ reservedWords = ["if", "else", "then", "skip", "print", "true", "false", "panic"
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
+rword :: Text -> Parser ()
+rword w = string w *> notFollowedBy alphaNumChar *> sc
+
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
@@ -60,48 +63,48 @@ num :: Parser Expr
 num = Num <$> lexeme L.decimal
 
 identText :: Parser Text
-identText = (lexeme . try) $ do
+identText = lexeme $ do  -- Removed try, it's not needed here
     x <- letterChar
     xs <- many alphaNumChar
-    let ident = x:xs
-    if ident `elem` reservedWords
-        then fail $ "keyword " ++ ident ++ " cannot be an identifier"
-        else return $ Data.Text.pack ident
+    return $ pack (x:xs)
 
 ident :: Parser Expr
 ident = Ident <$> identText
 
 bool :: Parser Expr
-bool = Bool <$> (True <$ symbol "true" <|> False <$ symbol "false")
+bool = Bool <$> (True <$ rword "true" <|> False <$ rword "false")
 
 str :: Parser Expr
 str = String <$> (char '"' >> pack <$> manyTill L.charLiteral (char '"'))
 
 expr :: Parser Expr
-expr = num <|> ident <|> bool <|> str
+expr = try num <|> try bool <|> try str <|> ident
 
 skip :: Parser Stmt
-skip = Skip <$ symbol "skip"
+skip = Skip <$ rword "skip"
 
 panic :: Parser Stmt
 panic = do
-    _ <- symbol "panic"
+    _ <- rword "panic"
     Panic <$> str
 
 assign :: Parser Stmt
 assign = do
     var <- identText
-    _ <- symbol ":="
-    Assign var <$> expr
+    if var `elem` map pack reservedWords
+        then fail $ "Keyword " ++ show var ++ " cannot be used as a variable name"
+        else do
+            _ <- symbol ":="
+            Assign var <$> expr
 
 printStmt :: Parser Stmt
 printStmt = Print <$> (symbol "print" >> expr)
 
 ifStmt :: Parser Stmt
 ifStmt = do
-    _ <- symbol "if"
+    _ <- rword "if"
     cond <- expr
-    _ <- symbol "then"
+    _ <- rword "then"
     _ <- symbol "{"
     thenBlock <- block
     _ <- symbol "}"
@@ -115,7 +118,7 @@ ifStmt = do
 
 whileStmt :: Parser Stmt
 whileStmt = do
-    _ <- symbol "while"
+    _ <- rword "while"
     cond <- expr
     _ <- symbol "{"
     block <- block
@@ -123,7 +126,7 @@ whileStmt = do
     return $ While cond block
 
 stmt :: Parser Stmt
-stmt = assign <|> panic <|> printStmt <|> skip <|> ifStmt <|> whileStmt 
+stmt = try printStmt <|> try panic <|> try skip <|> try ifStmt <|> try whileStmt <|> assign
 
 block :: Parser Block
 block = Statement <$> sepEndBy1 stmt (symbol ";") <|> return Void
@@ -155,7 +158,7 @@ evalExpr (Ident var) = do
     val <- lookupVar var
     case val of
         Just v -> return v
-        Nothing -> error $ "Undefined variable: "
+        Nothing -> error $ "Undefined variable: " ++ show var
 
 -- Evaluate a single statement
 evalStmt :: Stmt -> Interpreter ()
