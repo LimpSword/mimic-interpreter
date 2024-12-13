@@ -13,6 +13,10 @@ Vous pouvez exécuter un fichier `example.c` avec la commande suivante :
 ```bash
 ./mini-c example.c
 ```
+Il est également possible d'exécuter directement avec cabal :
+```bash
+cabal run Main.hs example.c
+```
 
 ## Librairies utilisées
 
