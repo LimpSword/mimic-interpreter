@@ -51,3 +51,8 @@ executable mini-c
     import:           common-all
     main-is:          Main.hs
     hs-source-dirs:   src
+
+executable Main.hs
+    import:           common-all
+    main-is:          Main.hs
+    hs-source-dirs:   src

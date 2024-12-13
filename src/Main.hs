@@ -123,7 +123,7 @@ whileStmt = do
     return $ While cond block
 
 stmt :: Parser Stmt
-stmt = panic <|> printStmt <|> skip <|> ifStmt <|> whileStmt <|> assign 
+stmt = assign <|> panic <|> printStmt <|> skip <|> ifStmt <|> whileStmt 
 
 block :: Parser Block
 block = Statement <$> sepEndBy1 stmt (symbol ";") <|> return Void
