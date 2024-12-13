@@ -4,8 +4,7 @@ version:            2023
 
 synopsis:           Mini-C interpreter
 license:            Unlicense
-author:             Alexandre Duchesne
-maintainer:         limpsword@users.noreply.github.com
+author:             Alexandre Duchesne, Aristide Duhem
 
 common common-all
      default-language: Haskell2010
