@@ -17,12 +17,14 @@ data Expr
     | Bool Bool
     | String Text
 
+-- Just to make the output more readable (instead of showing the constructor)
 instance Show Expr where
     show (Num n) = show n
     show (Ident i) = show i
     show (Bool b) = show b
     show (String s) = show s
 
+-- Every possible statement in the language
 data Stmt 
     = Skip
     | Print Expr
@@ -37,11 +39,11 @@ data Block
     | Statement [Stmt]
     deriving Show
 
+-- Store to keep track of variables while interpreting
 data Store = Store [(Text, Expr)]
     deriving Show
 
 type Parser = Parsec Void Text
--- Interpreter State Monad
 type Interpreter a = StateT Store IO a
 
 reservedWords :: [String]
@@ -50,6 +52,7 @@ reservedWords = ["if", "else", "then", "skip", "print", "true", "false", "panic"
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
+-- Helper function to parse reserved words if they are not part of a larger identifier
 rword :: Text -> Parser ()
 rword w = string w *> notFollowedBy alphaNumChar *> sc
 
@@ -62,8 +65,9 @@ symbol = L.symbol sc
 num :: Parser Expr
 num = Num <$> lexeme L.decimal
 
+-- An identifier is a letter followed by zero or more alphanumeric characters
 identText :: Parser Text
-identText = lexeme $ do  -- Removed try, it's not needed here
+identText = lexeme $ do 
     x <- letterChar
     xs <- many alphaNumChar
     return $ pack (x:xs)
@@ -77,6 +81,7 @@ bool = Bool <$> (True <$ rword "true" <|> False <$ rword "false")
 str :: Parser Expr
 str = String <$> (char '"' >> pack <$> manyTill L.charLiteral (char '"'))
 
+-- Try to parse a number, then a boolean, then a string, then an identifier
 expr :: Parser Expr
 expr = try num <|> try bool <|> try str <|> ident
 
@@ -91,6 +96,7 @@ panic = do
 assign :: Parser Stmt
 assign = do
     var <- identText
+    -- Check if the variable name is a reserved word, if so, fail
     if var `elem` map pack reservedWords
         then fail $ "Keyword " ++ show var ++ " cannot be used as a variable name"
         else do
@@ -125,6 +131,7 @@ whileStmt = do
     _ <- symbol "}"
     return $ While cond block
 
+-- Try to parse a statement in the following order: print, panic, skip, if, while, assign
 stmt :: Parser Stmt
 stmt = try printStmt <|> try panic <|> try skip <|> try ifStmt <|> try whileStmt <|> assign
 
@@ -132,30 +139,32 @@ block :: Parser Block
 block = Statement <$> sepEndBy1 stmt (symbol ";") <|> return Void
 
 
--- Initialize an empty store
 initStore :: Store
 initStore = Store []
 
--- Lookup a variable in the store
 lookupVar :: Text -> Interpreter (Maybe Expr)
 lookupVar var = do
+    -- get the current store (StateT Store IO)
     (Store store) <- get
     return $ lookup var store
 
 -- Update or add a variable to the store
 updateStore :: Text -> Expr -> Interpreter ()
 updateStore var val = do
+    -- get the current store (StateT Store IO)
     (Store store) <- get
     let newStore = (var, val) : filter (\(v,_) -> v /= var) store
+    -- put the new store back in the state
     put (Store newStore)
 
--- Evaluate an expression
 evalExpr :: Expr -> Interpreter Expr
+-- Try to evaluate an identifier by looking it up in the store
 evalExpr (Ident var) = do
     val <- lookupVar var
     case val of
         Just v -> return v
         Nothing -> error $ "Undefined variable: " ++ show var
+-- Otherwise, just return the value
 evalExpr e = return e
 
 -- Evaluate a single statement
@@ -164,7 +173,7 @@ evalStmt Skip = return ()
 evalStmt (Panic expr) = do
     val <- evalExpr expr
     liftIO $ putStrLn $ "Panic: " ++ show val
-    liftIO $ exitWith (ExitFailure 1)
+    liftIO $ exitWith (ExitFailure 1) -- exit after printing panic message
 evalStmt (Assign var expr) = do
     val <- evalExpr expr
     updateStore var val
@@ -184,18 +193,15 @@ evalStmt (Print expr) = do
     val <- evalExpr expr
     liftIO $ print val
 
--- Evaluate a block of statements
 evalBlock :: Block -> Interpreter ()
 evalBlock Void = return ()
-evalBlock (Statement stmts) = mapM_ evalStmt stmts
+evalBlock (Statement stmts) = mapM_ evalStmt stmts -- evaluate each statement in the block
 
--- Run the interpreter with initial store
 runInterpreter :: Block -> IO Store
 runInterpreter block = do
     (_, finalStore) <- runStateT (evalBlock block) initStore
     return finalStore
 
--- Helper function to run and print store state
 interpretProgram :: Block -> IO ()
 interpretProgram block = do
     finalStore <- runInterpreter block
@@ -207,6 +213,7 @@ readProg path = pack <$> readFile path
 
 main :: IO ()
 main = do
+    -- Get the file name from the command line arguments
     file <- getArgs
     prog <- readProg (head file)
     let parsed = parse block "" prog
