@@ -163,7 +163,7 @@ evalExpr (Ident var) = do
     val <- lookupVar var
     case val of
         Just v -> return v
-        Nothing -> error $ "Undefined variable: " ++ show var
+        Nothing -> errorWithoutStackTrace $ "Undefined variable: " ++ show var
 -- Otherwise, just return the value
 evalExpr e = return e
 
@@ -182,13 +182,13 @@ evalStmt (If condExpr thenBlock elseBlock) = do
     case cond of
         Bool True -> evalBlock thenBlock
         Bool False -> maybe (return ()) evalBlock elseBlock
-        _ -> error "Condition must be a boolean"
+        _ -> errorWithoutStackTrace "Condition must be a boolean"
 evalStmt (While condExpr block) = do
     cond <- evalExpr condExpr
     case cond of
         Bool True -> evalBlock block >> evalStmt (While condExpr block)
         Bool False -> return ()
-        _ -> error "Condition must be a boolean"
+        _ -> errorWithoutStackTrace "Condition must be a boolean"
 evalStmt (Print expr) = do
     val <- evalExpr expr
     liftIO $ print val
