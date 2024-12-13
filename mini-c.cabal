@@ -47,7 +47,7 @@ common common-all
                          ScopedTypeVariables
                          TypeApplications
 
-executable Main.hs
+executable mini-c
     import:           common-all
     main-is:          Main.hs
     hs-source-dirs:   src
