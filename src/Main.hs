@@ -63,7 +63,7 @@ symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
 num :: Parser Expr
-num = Num <$> lexeme L.decimal
+num = Num <$> L.signed sc (lexeme L.decimal)
 
 -- An identifier is a letter followed by zero or more alphanumeric characters
 identText :: Parser Text
