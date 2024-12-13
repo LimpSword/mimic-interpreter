@@ -1,2 +1,2 @@
-printx := true;
-print printx;
+ifx := true;
+print ifx;
