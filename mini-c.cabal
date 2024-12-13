@@ -59,7 +59,7 @@ executable Main.hs
     main-is:          Main.hs
     hs-source-dirs:   src
 
-executable testall.hs
+executable TestAll.hs
     import:           common-all
-    main-is:          testall.hs
+    main-is:          TestAll.hs
     hs-source-dirs:   src

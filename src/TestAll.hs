@@ -18,16 +18,13 @@ examplesDir = "examples"
 stdoutDir :: FilePath
 stdoutDir = "examples_stdout"
 
--- Get all files in the examples directory
--- getFiles :: IO [FilePath]
--- getFiles = listDirectory examplesDir
-
+-- Get all files in the examples directory except while.c that do not finish
 getFiles :: IO [FilePath]
 getFiles = do
     contents <- listDirectory examplesDir  -- Get all files in the current directory
     return $ filter (\f -> f /= "while.c" && not (f `elem` [".", ".."])) contents  
 
--- Run the Haskell script on a given input file and capture stdout
+-- Run the Haskell script on a given input file
 runScriptOnFile :: FilePath -> IO (ExitCode, String, String)
 runScriptOnFile inputFile = 
     readProcessWithExitCode "cabal" ["run", mainScript, examplesDir </> inputFile] ""
@@ -41,7 +38,6 @@ compareWithReferenceFile inputFile stdout = do
     let cleanedRefContent = T.strip refContent
     return $ cleanedStdout == cleanedRefContent
 
--- Main processing function
 processFiles :: IO ()
 processFiles = do
     files <- getFiles
@@ -49,24 +45,24 @@ processFiles = do
     mapM_ printResult (zip files results)
   where
     processFile file = do
-        (exitCode, stdout, stderr) <- runScriptOnFile file
-        comparisonResult <- compareWithReferenceFile file stdout
-        comparisonResultStderr <- compareWithReferenceFile file stderr
+        (exitCode, stdout, stderr) <- runScriptOnFile file -- Run the script
+        comparisonResult <- compareWithReferenceFile file stdout -- Compare with reference file
+        comparisonResultStderr <- compareWithReferenceFile file stderr -- Compare with reference file
         return (exitCode, stdout, stderr, comparisonResult, comparisonResultStderr)
     
     printResult (file, (exitCode, stdout, stderr, comparisonResult,comparisonResultStderr)) = do
-        when (comparisonResult) $ do
+        when (comparisonResult) $ do -- Print if matching
             putStrLn $ "File: " ++ file
             putStrLn $ "Exit Code: " ++ show exitCode
             putStrLn $ "Matches Reference: " ++ show comparisonResult
 
-        -- Print full details if there's a mismatch
-        when (not comparisonResult && comparisonResultStderr) $ do
+        
+        when (not comparisonResult && comparisonResultStderr) $ do -- Print if match in stderr
                 putStrLn $ "File: " ++ file
                 putStrLn $ "Exit Code: " ++ show exitCode
                 putStrLn $ "Matches Reference: " ++ show comparisonResultStderr
                 putStrLn "Match in Stderr:"
-        when (not comparisonResult && not comparisonResultStderr) $ do
+        when (not comparisonResult && not comparisonResultStderr) $ do -- Print the output if not matching
                 putStrLn "Full Stdout:"
                 putStrLn stdout
                 putStrLn "Full Stderr:"
