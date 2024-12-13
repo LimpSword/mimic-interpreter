@@ -21,3 +21,15 @@ Vous pouvez exécuter un fichier `example.c` avec la commande suivante :
 ## Tests disponibles
 
 Des tests sont disponibles dans le dossier `examples`.
+
+## Execution des Tests
+
+Ils est possible de d'éxécuter les test avec TestAll.hs
+Il compare la sortie du chaque programme avec la sortie attendu de `examples_stdout`
+
+Pour l'éxécuter il est nécessaire de faire :
+
+```bash
+cabal build 
+cabal run TestAll.hs```
+
