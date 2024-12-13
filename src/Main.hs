@@ -9,6 +9,7 @@ import Data.Maybe (maybeToList)
 import Text.Megaparsec.Char
 import Control.Monad.State
 import System.Exit
+import System.Environment
 
 data Expr 
     = Num Double
@@ -205,7 +206,8 @@ readProg path = pack <$> readFile path
 
 main :: IO ()
 main = do
-    prog <- readProg "examples/example.c"
+    file <- getArgs
+    prog <- readProg (head file)
     let parsed = parse block "" prog
     case parsed of
         Left err -> print err
