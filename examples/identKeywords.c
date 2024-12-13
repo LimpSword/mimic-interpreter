@@ -1,0 +1,2 @@
+printx := true;
+print printx;
