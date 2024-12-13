@@ -151,14 +151,12 @@ updateStore var val = do
 
 -- Evaluate an expression
 evalExpr :: Expr -> Interpreter Expr
-evalExpr e@(Num _) = return e
-evalExpr e@(Bool _) = return e
-evalExpr e@(String _) = return e
 evalExpr (Ident var) = do
     val <- lookupVar var
     case val of
         Just v -> return v
         Nothing -> error $ "Undefined variable: " ++ show var
+evalExpr e = return e
 
 -- Evaluate a single statement
 evalStmt :: Stmt -> Interpreter ()
